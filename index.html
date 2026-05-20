@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GeoJourney</title>
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Playfair+Display:wght@700;900&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --pink: #ff8ade;
+      --blue: #acfff3;
+      --yellow: #fbffa4;
+      --dark: #1a1a2e;
+      --gray: #888;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #fdfcff;
+      font-family: 'Sarabun', sans-serif;
+    }
+
+    .grad-text {
+      background: linear-gradient(135deg, #d63fa8, #00b4a0);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .nav-tab {
+      cursor: pointer;
+      padding: 9px 18px;
+      border-radius: 100px;
+      font-weight: 500;
+      font-size: 14px;
+      white-space: nowrap;
+      border: none;
+      font-family: 'Sarabun', sans-serif;
+      transition: all 0.25s ease;
+    }
+
+    .nav-tab.active {
+      background: linear-gradient(135deg, #ff8ade, #acfff3);
+      color: #1a1a2e;
+      box-shadow: 0 4px 15px rgba(255, 138, 222, 0.4);
+    }
+
+    .nav-tab:not(.active) {
+      background: transparent;
+      color: #555;
+    }
+
+    .nav-tab:not(.active):hover {
+      background: rgba(255, 138, 222, 0.12);
+    }
+
+    .card-hover {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .card-hover:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(255, 138, 222, 0.25);
+    }
+
+    @keyframes float {
+
+      0%,
+      100% {
+        transform: translateY(0)
+      }
+
+      50% {
+        transform: translateY(-10px)
+      }
+    }
+
+    .float {
+      animation: float 4s ease-in-out infinite;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    .fade-up {
+      animation: fadeUp 0.6s ease forwards;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .spin {
+      animation: spin 1s linear infinite;
+    }
+
+    .section-pill {
+      display: inline-block;
+      padding: 4px 16px;
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #ff8ade22, #acfff322);
+      color: #c44f9a;
+      border: 1px solid #ff8ade44;
+      margin-bottom: 10px;
+    }
+
+    /* Expiry warning */
+    .expiry-warning {
+      background: linear-gradient(135deg, #fff3cd, #ffeeba);
+      border: 1px solid #ffc107;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #856404;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .expiry-danger {
+      background: linear-gradient(135deg, #fce8e8, #ffd5d5);
+      border: 1px solid #e55;
+      color: #c00;
+    }
+
+    /* Locked course card */
+    .locked-card {
+      opacity: 0.7;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .locked-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(1px);
+    }
+
+    /* Loading spinner */
+    .loader {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #ff8ade33;
+      border-top-color: #ff8ade;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 6px;
+    }
+
+    .hamburger span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: #1a1a2e;
+      border-radius: 2px;
+      transition: all 0.2s;
+    }
+
+    .mobile-menu {
+      display: none;
+      flex-direction: column;
+      gap: 4px;
+      padding: 12px 24px 16px;
+      border-top: 1px solid rgba(255, 138, 222, 0.15);
+      background: rgba(255, 255, 255, 0.96);
+    }
+
+    @media (max-width: 640px) {
+      .hamburger {
+        display: flex !important;
+      }
+
+      .desktop-tabs {
+        display: none !important;
+      }
+
+      .mobile-menu.open {
+        display: flex !important;
+      }
+
+      .mobile-menu .nav-tab {
+        text-align: left;
+        border-radius: 12px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useCallback } = React;
+
+    // ─── Utilities ────────────────────────────────────────────────────────────────
+
+    function parseGSheetJSON(raw) {
+      const json = JSON.parse(raw.replace(/.*?\(/, '').replace(/\);\s*$/, ''));
+      const cols = json.table.cols.map(c => c.label);
+      return json.table.rows.map(row => {
+        const obj = {};
+        row.c.forEach((cell, i) => { obj[cols[i]] = cell?.v ?? ''; });
+        return obj;
+      });
+    }
+
+    function getDaysUntilExpiry(dateStr) {
+      if (!dateStr) return null;
+      const exp = new Date(dateStr);
+      const now = new Date();
+      return Math.ceil((exp - now) / (1000 * 60 * 60 * 24));
+    }
+
+    // ─── Config ───────────────────────────────────────────────────────────────────
+
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzVsm21UcH7xRk6_a1x7DB4izy-4NE5haPFDt97lgEfcVdMMUhFnKcscjDNfJM6pZvF/exec';
+
+    // ─── Course Definitions (for locked display) ──────────────────────────────────
+
+    const ALL_COURSES = [
+      {
+        id: 'tgeo',
+        badge: '🌍',
+        title: 'TGeo Crash Course',
+        tag: 'Competition Prep',
+        desc: 'สรุปเนื้อหาครบ + ตะลุยโจทย์เข้มข้น เพื่อสอบ TGeo และคว้าเหรียญรางวัล',
+        tapes: '51 Tapes',
+        grad: 'linear-gradient(135deg,#ff8ade,#acfff3)',
+        price: 'Contact for pricing',
+      },
+      {
+        id: 'geocamp1',
+        badge: '🏕️',
+        title: 'Geo Camp 1 Essentials',
+        tag: 'Foundation',
+        desc: 'เรียนภูมิศาสตร์ตั้งแต่ 0 ครอบคลุมทุก Head เหมาะสำหรับ Geo Camp 1',
+        tapes: '56 Tapes',
+        grad: 'linear-gradient(135deg,#acfff3,#ff8ade)',
+        price: 'Contact for pricing',
+      },
+      {
+        id: 'tgeomock2026',
+        badge: '📝',
+        title: 'TGeo Mock Exam 2026',
+        tag: 'Mock Exam',
+        desc: 'ข้อสอบจำลอง WRT + MMT ครบทุกพาร์ท พร้อมเฉลยละเอียดทุกข้อ',
+        tapes: '11 Tapes',
+        grad: 'linear-gradient(135deg,#fbffa4,#acfff3)',
+        price: 'Contact for pricing',
+      },
+    ];
+
+    // ─── Home Page ────────────────────────────────────────────────────────────────
+
+    function HomePage({ setActiveTab, reviews }) {
+
+      return (
+        <div className="fade-up">
+          {/* Hero */}
+          <section style={{ background: 'linear-gradient(135deg,#ff8ade22 0%,#acfff333 50%,#fbffa422 100%)', padding: '80px 24px 60px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: -60, right: -60, width: 300, height: 300, borderRadius: '50%', background: 'linear-gradient(135deg,#ff8ade33,#acfff333)', filter: 'blur(60px)' }} />
+            <div style={{ position: 'absolute', bottom: -60, left: -60, width: 250, height: 250, borderRadius: '50%', background: 'linear-gradient(135deg,#fbffa433,#acfff333)', filter: 'blur(50px)' }} />
+            <div style={{ position: 'relative', maxWidth: 700, margin: '0 auto' }}>
+              <span className="section-pill">🌏 Geography Education</span>
+              <h1 style={{ fontFamily: "'Playfair Display',serif", fontSize: 'clamp(2rem,5vw,3.5rem)', fontWeight: 900, color: '#1a1a2e', lineHeight: 1.2, margin: '16px 0' }}>
+                Learn Geography<br />
+                <span className="grad-text">with Thailand's Representative</span>
+              </h1>
+              <p style={{ fontSize: 18, color: '#555', marginBottom: 8, fontWeight: 300 }}>
+                by <strong style={{ color: '#1a1a2e' }}>P' Ja-Ae (Kaewwalin Salika)</strong> — iGeo 20th Bronze Medalist
+              </p>
+              <p style={{ fontSize: 16, color: '#777', marginBottom: 32 }}>No prior knowledge needed. Anyone can start. 🌱</p>
+              <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button onClick={() => setActiveTab('courses')} style={{ padding: '14px 32px', borderRadius: 100, background: 'linear-gradient(135deg,#ff8ade,#acfff3)', border: 'none', fontSize: 16, fontWeight: 700, color: '#1a1a2e', cursor: 'pointer', boxShadow: '0 6px 20px rgba(255,138,222,0.4)', fontFamily: "'Sarabun',sans-serif" }}>
+                  📚 Enroll Now
+                </button>
+                <button onClick={() => setActiveTab('courses')} style={{ padding: '14px 32px', borderRadius: 100, background: 'white', border: '2px solid #ff8ade', fontSize: 16, fontWeight: 600, color: '#c44f9a', cursor: 'pointer', fontFamily: "'Sarabun',sans-serif" }}>
+                  ▶ Try Free Lesson
+                </button>
+              </div>
+              <div style={{ display: 'flex', gap: 32, justifyContent: 'center', marginTop: 40, flexWrap: 'wrap' }}>
+                {[['100+', 'Students'], ['3', 'Courses']].map(([v, l]) => (
+                  <div key={l} style={{ textAlign: 'center' }}>
+                    <div className="grad-text" style={{ fontSize: 24, fontWeight: 700 }}>{v}</div>
+                    <div style={{ fontSize: 13, color: '#888' }}>{l}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* About */}
+          <section style={{ padding: '64px 24px', maxWidth: 1000, margin: '0 auto' }}>
+            <div style={{ textAlign: 'center', marginBottom: 40 }}>
+              <span className="section-pill">About P' Ja-Ae</span>
+              <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: 'clamp(1.5rem,3vw,2.2rem)', color: '#1a1a2e', marginTop: 8 }}>Experience & Awards</h2>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 16 }}>
+              {[
+                { color: '#FFD700', border: '#b8920a', icon: '🥇', title: 'Gold Medal (2nd) — TGeo 6th', details: ['Highest Regional Overall Score', 'Highest Regional Written Response Test (WRT) Score', 'Highest Regional Fieldwork Exercise (FWE) Score'] },
+                { color: '#C0C0C0', border: '#888', icon: '🥈', title: 'Silver Medal — TGeo 5th', details: ['5th Thailand Geography Olympiad (2023)'] },
+                { color: '#CD7F32', border: '#8B4513', icon: '🥉', title: 'Bronze Medal — iGeo 20th', details: ["Thailand's Representative", "Ranked 17th globally (Fieldwork Exercise)", "20th International Geography Olympiad (2024), Dublin, Ireland 🇮🇪"] },
+                { color: '#fbffa4', border: '#b8a800', icon: '🏆', title: 'Champion — Thailand Geography Genius Challenge', details: ['1st place out of 200 teams'] },
+              ].map((item, i) => (
+                <div key={i} className="card-hover" style={{ padding: 24, borderRadius: 20, background: 'white', border: `2px solid ${item.border}33`, boxShadow: `0 4px 20px ${item.color}33`, position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ position: 'absolute', top: -16, right: -16, width: 80, height: 80, borderRadius: '50%', background: `${item.color}22` }} />
+                  <div style={{ fontSize: 36, marginBottom: 12 }}>{item.icon}</div>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: '#1a1a2e', marginBottom: 10, lineHeight: 1.4 }}>{item.title}</div>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                    {item.details.map((d, j) => (
+                      <li key={j} style={{ fontSize: 12, color: '#666', padding: '3px 0', display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                        <span style={{ color: item.border, marginTop: 2, flexShrink: 0 }}>✦</span>{d}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: 20, padding: 20, borderRadius: 20, background: 'linear-gradient(135deg,#acfff322,#fbffa422)', border: '1px solid #acfff355', textAlign: 'center' }}>
+              <span style={{ fontSize: 14, color: '#555' }}>🎓 Currently a Medical Student at Siriraj Medical School &nbsp;|&nbsp; High School GPA: <strong>4.00</strong></span>
+            </div>
+          </section>
+
+          {/* Testimonials */}
+          <section style={{ padding: '48px 24px 80px', background: 'linear-gradient(135deg,#ff8ade08,#acfff310)' }}>
+            <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+              <div style={{ textAlign: 'center', marginBottom: 40 }}>
+                <span className="section-pill">Testimonials</span>
+                <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: 'clamp(1.5rem,3vw,2.2rem)', color: '#1a1a2e', marginTop: 8 }}>What Students Say</h2>
+              </div>
+              {reviews.length === 0 ? (
+                <div style={{ textAlign: 'center', color: '#bbb', padding: 32 }}>Loading reviews…</div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 20 }}>
+                  {reviews.map((r, i) => (
+                    <div key={i} className="card-hover" style={{ padding: 28, borderRadius: 20, background: 'white', border: '1px solid rgba(172,255,243,0.4)', boxShadow: '0 4px 16px rgba(0,0,0,0.06)' }}>
+                      {/* Star rating */}
+                      {r.Rating && (
+                        <div style={{ marginBottom: 8, color: '#f5a623', fontSize: 14 }}>
+                          {'★'.repeat(Math.min(5, parseInt(r.Rating) || 0))}{'☆'.repeat(Math.max(0, 5 - (parseInt(r.Rating) || 0)))}
+                        </div>
+                      )}
+                      <div style={{ fontSize: 24, marginBottom: 12 }}>💬</div>
+                      <p style={{ fontSize: 15, color: '#444', lineHeight: 1.7, marginBottom: 16, fontStyle: 'italic' }}>"{r.Content}"</p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        {r.PhotoURL ? (
+                          <img src={r.PhotoURL} alt={r.UserName} style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                        ) : (
+                          <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#ff8ade,#acfff3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>😊</div>
+                        )}
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: 14, color: '#1a1a2e' }}>{r.UserName}</div>
+                          {r.Result && <div style={{ fontSize: 12, color: '#00b4a0', fontWeight: 600 }}>{r.Result}</div>}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+      );
+    }
+
+    // ─── Achievements Page ────────────────────────────────────────────────────────
+
+    function AchievementsPage() {
+      return (
+        <div className="fade-up" style={{ maxWidth: 1000, margin: '0 auto', padding: '60px 24px' }}>
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
+            <span className="section-pill">Awards & Portfolio</span>
+            <h1 style={{ fontFamily: "'Playfair Display',serif", fontSize: 'clamp(1.8rem,4vw,2.8rem)', color: '#1a1a2e', marginTop: 10 }}>Achievements</h1>
+            <p style={{ color: '#888', fontSize: 16, marginTop: 8 }}>P' Ja-Ae's journey of excellence</p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 20, marginBottom: 60 }}>
+            {[
+              { color: '#FFD700', border: '#b8920a', icon: '🥇', title: 'Gold Medal (2nd) — TGeo 6th', details: ['Highest Regional Overall Score', 'Highest Regional Written Response Test (WRT) Score', 'Highest Regional Fieldwork Exercise (FWE) Score'] },
+              { color: '#C0C0C0', border: '#888', icon: '🥈', title: 'Silver Medal — TGeo 5th', details: ['5th Thailand Geography Olympiad (2023)'] },
+              { color: '#CD7F32', border: '#8B4513', icon: '🥉', title: 'Bronze Medal — iGeo 20th', details: ["Thailand's Representative", "Ranked 17th globally (Fieldwork Exercise)", "20th International Geography Olympiad (2024), Dublin, Ireland 🇮🇪"] },
+              { color: '#fbffa4', border: '#b8a800', icon: '🏆', title: 'Champion — Thailand Geography Genius Challenge', details: ['1st place out of 200 teams'] },
+            ].map((item, i) => (
+              <div key={i} className="card-hover" style={{ padding: 28, borderRadius: 24, background: 'white', border: `2px solid ${item.border}33`, boxShadow: `0 6px 24px ${item.color}33`, position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, borderRadius: '50%', background: `${item.color}22` }} />
+                <div style={{ fontSize: 40, marginBottom: 12 }}>{item.icon}</div>
+                <h3 style={{ fontWeight: 700, fontSize: 15, color: '#1a1a2e', marginBottom: 12, lineHeight: 1.4 }}>{item.title}</h3>
+                <ul style={{ listStyle: 'none' }}>
+                  {item.details.map((d, j) => (
+                    <li key={j} style={{ fontSize: 13, color: '#666', padding: '3px 0', display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                      <span style={{ color: item.border, marginTop: 2 }}>✦</span>{d}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // ─── Courses Page ─────────────────────────────────────────────────────────────
+
+    const COURSE_DATA = [
+      {
+        id: 'tgeo', badge: '🌍', title: 'TGeo Crash Course', tag: 'Competition Prep', desc: 'สรุปเนื้อหาครบ + ตะลุยโจทย์เข้มข้น เพื่อสอบ TGeo และคว้าเหรียญรางวัล', tapes: '51 Tapes', grad: 'linear-gradient(135deg,#ff8ade,#acfff3)', formLink: 'https://docs.google.com/forms/d/e/1FAIpQLSeTOtTspW85t5_BrrF6v1Zm3xTC1YMFDo2z5L6VH5hCMhh8aQ/viewform?usp=sharing&ouid=104149014265744005176', heads: [
+          {
+            title: '1. Physical Geography', color: '#ff8ade', subs: [
+              { name: 'INTRO for TGeo Crash Course', range: 'Tape 1' },
+              { name: 'Landform, Landscapes & Land Use', range: 'Tape 2–8' },
+              { name: 'Resources & Resource Management', range: 'Tape 9–12' },
+              { name: 'Climate & Climate Change', range: 'Tape 13–16' },
+              { name: 'Hazard & Hazard Management', range: 'Tape 17–20' },
+            ]
+          },
+          { title: '2. Fieldwork Exercise', color: '#acfff3', subs: [{ name: 'Fieldwork Exercise', range: 'Tape 21–26' }] },
+          {
+            title: '3. Human Geography', color: '#fbffa4', subs: [
+              { name: 'Population & Population Change', range: 'Tape 27–29' },
+              { name: 'Cultural Geography & Regional Identities', range: 'Tape 30–32' },
+              { name: 'Economic Geography & Globalization', range: 'Tape 33–35' },
+              { name: 'Development Geography & Spatial Inequality', range: 'Tape 36–38' },
+              { name: 'Urban Geography, Urban Renewal & Urban Planning', range: 'Tape 39–41' },
+              { name: 'Tourism & Tourism Management', range: 'Tape 42–44' },
+              { name: 'Agricultural Geography & Food Problems', range: 'Tape 45–47' },
+            ]
+          },
+          { title: '4. Written Response Test (WRT) Past Papers', color: '#ff8ade88', subs: [{ name: 'WRT Past Papers', range: 'Tape 48–51' }] },
+        ]
+      },
+      {
+        id: 'geocamp1', badge: '🏕️', title: 'Geo Camp 1 Essentials', tag: 'Foundation', desc: 'เรียนภูมิศาสตร์ตั้งแต่ 0 ครอบคลุมทุก Head เหมาะสำหรับ Geo Camp 1', tapes: '56 Tapes', grad: 'linear-gradient(135deg,#acfff3,#ff8ade)', formLink: 'https://docs.google.com/forms/d/e/1FAIpQLSeTOtTspW85t5_BrrF6v1Zm3xTC1YMFDo2z5L6VH5hCMhh8aQ/viewform?usp=sharing&ouid=104149014265744005176', heads: [
+          {
+            title: '1. Physical Geography', color: '#ff8ade', subs: [
+              { name: 'INTRO for Geo Camp 1 Essentials', range: 'Tape 1' },
+              { name: 'Earth & Landform', range: 'Tape 2–9' },
+              { name: 'Resources & Resource Management', range: 'Tape 10–12' },
+              { name: 'Climate & Climate Change', range: 'Tape 13–17' },
+              { name: 'Environmental Geography', range: 'Tape 18–19' },
+              { name: 'Hazard & Hazard Management', range: 'Tape 20–21' },
+            ]
+          },
+          {
+            title: '2. Human Geography', color: '#fbffa4', subs: [
+              { name: 'Population Geography', range: 'Tape 22–25' },
+              { name: 'Cultural Geography', range: 'Tape 26–28' },
+              { name: 'Economic Geography', range: 'Tape 29–30' },
+              { name: 'Development Geography', range: 'Tape 31–32' },
+              { name: 'Urban Geography', range: 'Tape 33–35' },
+              { name: 'Geography of Tourism', range: 'Tape 36–37' },
+              { name: 'Food & Agriculture Geography', range: 'Tape 38–39' },
+            ]
+          },
+          {
+            title: '3. Geographic Techniques', color: '#acfff3', subs: [
+              { name: 'Map', range: 'Tape 40–41' },
+              { name: 'Aerial Photo & Interpretation, Remote Sensing', range: 'Tape 42–44' },
+              { name: 'GIS & GPS', range: 'Tape 45–47' },
+              { name: 'Fieldwork Exercise & Data Analysis', range: 'Tape 48–50' },
+              { name: 'Past Paper \'67', range: 'Tape 51–56' },
+            ]
+          },
+        ]
+      },
+      {
+        id: 'tgeomock2026', badge: '📝', title: 'TGeo Mock Exam 2026', tag: 'Mock Exam', desc: 'ข้อสอบจำลอง WRT + MMT ครบทุกพาร์ท พร้อมเฉลยละเอียดทุกข้อ', tapes: '11 Tapes', grad: 'linear-gradient(135deg,#fbffa4,#acfff3)', formLink: 'https://docs.google.com/forms/d/e/1FAIpQLSeTOtTspW85t5_BrrF6v1Zm3xTC1YMFDo2z5L6VH5hCMhh8aQ/viewform?usp=sharing&ouid=104149014265744005176', heads: [
+          {
+            title: '1. INTRO', color: '#fbffa4', subs: [
+              { name: 'INTRO for TGeo Mock Exam', range: 'Tape 1' },
+              { name: 'WRT Writing Guidelines', range: 'Tape 2' },
+            ]
+          },
+          { title: '2. WRT Physical Geography Answer', color: '#ff8ade', subs: [{ name: 'WRT Physical Geography Answer', range: 'Tape 3–5' }] },
+          { title: '3. WRT Human Geography Answer', color: '#acfff3', subs: [{ name: 'WRT Human Geography Answer', range: 'Tape 6–9' }] },
+          { title: '4. MMT Answer', color: '#fbffa4', subs: [{ name: 'MMT Answer', range: 'Tape 10–11' }] },
+        ]
+      },
+    ];
+
+    function CoursesPage({ setActiveTab }) {
+      const [openCourse, setOpenCourse] = useState('tgeo');
+      const [openHead, setOpenHead] = useState(0);
+
+      return (
+        <div className="fade-up" style={{ maxWidth: 1000, margin: '0 auto', padding: '60px 24px' }}>
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
+            <span className="section-pill">All Courses</span>
+            <h1 style={{ fontFamily: "'Playfair Display',serif", fontSize: 'clamp(1.8rem,4vw,2.8rem)', color: '#1a1a2e', marginTop: 10 }}>Courses</h1>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            {COURSE_DATA.map(course => (
+              <div key={course.id} style={{ borderRadius: 24, overflow: 'hidden', border: '1px solid rgba(255,138,222,0.2)', background: 'white', boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}>
+                <div style={{ padding: 28, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 20, justifyContent: 'space-between' }} onClick={() => setOpenCourse(openCourse === course.id ? null : course.id)}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <div style={{ width: 56, height: 56, borderRadius: 16, background: course.grad, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0 }}>{course.badge}</div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                        <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: 20, color: '#1a1a2e', margin: 0 }}>{course.title}</h2>
+                        <span style={{ padding: '3px 10px', borderRadius: 100, background: course.grad, fontSize: 11, fontWeight: 700, color: '#1a1a2e' }}>{course.tag}</span>
+                      </div>
+                      <p style={{ fontSize: 14, color: '#888', margin: 0 }}>{course.desc}</p>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#c44f9a', background: '#ff8ade15', padding: '4px 12px', borderRadius: 100 }}>{course.tapes}</span>
+                    <span style={{ fontSize: 20, transform: openCourse === course.id ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>⌄</span>
+                  </div>
+                </div>
+                {openCourse === course.id && (
+                  <div style={{ borderTop: '1px solid rgba(255,138,222,0.15)', padding: '0 28px 28px' }}>
+                    <div style={{ paddingTop: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      {course.heads.map((head, hi) => (
+                        <div key={hi} style={{ borderRadius: 16, overflow: 'hidden', border: `1px solid ${head.color}44` }}>
+                          <div onClick={() => setOpenHead(openHead === hi ? null : hi)} style={{ padding: '14px 18px', background: `${head.color}22`, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontWeight: 700, fontSize: 14, color: '#1a1a2e' }}>{head.title}</span>
+                            <span style={{ fontSize: 16, transform: openHead === hi ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>⌄</span>
+                          </div>
+                          {openHead === hi && (
+                            <div style={{ padding: '12px 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                              {head.subs.map((sub, si) => (
+                                <div key={si} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: 12, background: 'white', border: '1px solid rgba(0,0,0,0.05)' }}>
+                                  <span style={{ fontSize: 14, color: '#444' }}>📌 {sub.name}</span>
+                                  {sub.range && <span style={{ fontSize: 12, fontWeight: 700, color: '#c44f9a', background: '#ff8ade15', padding: '3px 10px', borderRadius: 100, flexShrink: 0 }}>{sub.range}</span>}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => course.formLink && course.formLink !== '#' ? window.open(course.formLink, '_blank') : setActiveTab('contact')}
+                      style={{ marginTop: 20, width: '100%', padding: 14, borderRadius: 100, background: 'linear-gradient(135deg,#ff8ade,#acfff3)', border: 'none', fontFamily: "'Sarabun',sans-serif", fontSize: 16, fontWeight: 700, color: '#1a1a2e', cursor: 'pointer', boxShadow: '0 4px 16px rgba(255,138,222,0.3)' }}>
+                      🛒 Purchase This Course
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // ─── My Course Page ───────────────────────────────────────────────────────────
+
+    function MyCoursePage({ user, setUser, setActiveTab }) {
+      const [studentData, setStudentData] = useState(null);
+      const [content, setContent] = useState([]);
+      const [loading, setLoading] = useState(false);
+      const [error, setError] = useState('');
+      const [openFolder, setOpenFolder] = useState(null);
+
+      // Fetch course data from Google Sheet
+      const fetchCourses = useCallback(async (email) => {
+        setLoading(true);
+        setError('');
+        try {
+          // Fetch Students sheet
+          const studRes = await fetch('https://docs.google.com/spreadsheets/d/1NtBJDUtxx1QuJYu60TRGnAi4q5fJLioYqxYC_FAL7rk/gviz/tq?tqx=out:json&sheet=Students');
+          const studRows = parseGSheetJSON(await studRes.text());
+          const student = studRows.find(r => r.Email?.toLowerCase() === email.toLowerCase());
+
+          if (!student) {
+            setError('No course found for this account. Please contact P\' J\'Ae to enroll.');
+            setLoading(false);
+            return;
+          }
+
+          const purchasedCourses = student.Courses
+            ? student.Courses.split(',').map(c => c.trim().toLowerCase()).filter(Boolean)
+            : [];
+
+          setStudentData({
+            email: student.Email,
+            courses: purchasedCourses,
+            expireDate: student.ExpireDate || null,
+          });
+
+          // Fetch Content sheet
+          if (purchasedCourses.length > 0) {
+            const contentRes = await fetch('https://docs.google.com/spreadsheets/d/1NtBJDUtxx1QuJYu60TRGnAi4q5fJLioYqxYC_FAL7rk/gviz/tq?tqx=out:json&sheet=Content');
+            const contentRows = parseGSheetJSON(await contentRes.text());
+            const filtered = contentRows.filter(r => purchasedCourses.includes(r.course?.toLowerCase()));
+            setContent(filtered);
+          }
+        } catch (e) {
+          setError('Failed to load course data. Please try again.');
+        }
+        setLoading(false);
+      }, []);
+
+      // On mount: check for existing session
+      useEffect(() => {
+        if (window.netlifyIdentity) {
+          const currentUser = window.netlifyIdentity.currentUser();
+          if (currentUser && !user) {
+            const u = { email: currentUser.email, name: currentUser.user_metadata?.full_name || currentUser.email };
+            setUser(u);
+          }
+        }
+      }, []);
+
+      // Fetch when user is set
+      useEffect(() => {
+        if (user?.email) {
+          fetchCourses(user.email);
+        }
+      }, [user?.email]);
+
+      function handleLogin() {
+        if (!window.netlifyIdentity) return;
+        window.netlifyIdentity.open('login');
+        window.netlifyIdentity.on('login', (u) => {
+          const userData = { email: u.email, name: u.user_metadata?.full_name || u.email };
+          setUser(userData);
+          window.netlifyIdentity.close();
+        });
+      }
+
+      function handleSignOut() {
+        if (window.netlifyIdentity) {
+          window.netlifyIdentity.logout();
+        }
+        setUser(null);
+        setStudentData(null);
+        setContent([]);
+        setError('');
+      }
+
+      // Expiry warning
+      function ExpiryBanner() {
+        if (!studentData?.expireDate) return null;
+        const days = getDaysUntilExpiry(studentData.expireDate);
+        if (days === null || days > 30) return null;
+        const danger = days <= 7;
+        return (
+          <div className={`expiry-warning ${danger ? 'expiry-danger' : ''}`} style={{ marginBottom: 20 }}>
+            <span style={{ fontSize: 20 }}>{danger ? '🚨' : '⚠️'}</span>
+            <span>
+              {danger
+                ? `Your access expires in ${days} day${days !== 1 ? 's' : ''}! Please renew soon.`
+                : `Your access expires on ${studentData.expireDate} (${days} days remaining).`}
+            </span>
+          </div>
+        );
+      }
+
+      // ── Not logged in ──
+      if (!user) {
+        return (
+          <div className="fade-up" style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px 24px' }}>
+            <div style={{ textAlign: 'center', maxWidth: 480 }}>
+              <div className="float" style={{ width: 100, height: 100, borderRadius: '50%', background: 'linear-gradient(135deg,#ff8ade,#acfff3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48, margin: '0 auto 28px', boxShadow: '0 8px 32px rgba(255,138,222,0.4)' }}>🎓</div>
+              <span className="section-pill">My Course</span>
+              <h1 style={{ fontFamily: "'Playfair Display',serif", fontSize: 'clamp(1.5rem,3vw,2.2rem)', color: '#1a1a2e', margin: '16px 0 10px' }}>My Learning Space</h1>
+              <p style={{ color: '#888', fontSize: 15, marginBottom: 32, lineHeight: 1.7 }}>
+                Sign in to access your enrolled courses<br />and continue learning right away.
+              </p>
+              <button onClick={handleLogin} style={{ padding: '16px 40px', borderRadius: 100, background: 'linear-gradient(135deg,#ff8ade,#acfff3)', border: 'none', fontSize: 16, fontWeight: 700, color: '#1a1a2e', cursor: 'pointer', fontFamily: "'Sarabun',sans-serif", boxShadow: '0 6px 20px rgba(255,138,222,0.4)', width: '100%', maxWidth: 320 }}>
+                🔐 Sign In / Sign Up
+              </button>
+              <p style={{ marginTop: 24, fontSize: 13, color: '#bbb' }}>
+                Haven't purchased a course yet?{' '}
+                <span onClick={() => setActiveTab('courses')} style={{ color: '#c44f9a', cursor: 'pointer', fontWeight: 600 }}>Browse courses →</span>
+              </p>
+            </div>
+          </div>
+        );
+      }
+
+      // ── Loading ──
+      if (loading) {
+        return (
+          <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 20 }}>
+            <div className="loader" />
+            <p style={{ color: '#888', fontSize: 15 }}>Loading your courses...</p>
+          </div>
+        );
+      }
+
+      // ── Error (no enrollment) ──
+      if (error) {
+        return (
+          <div className="fade-up" style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16, padding: 24 }}>
+            <div style={{ fontSize: 56 }}>📭</div>
+            <h2 style={{ fontFamily: "'Playfair Display',serif", color: '#1a1a2e', fontSize: 22 }}>No Courses Found</h2>
+            <p style={{ color: '#888', textAlign: 'center', maxWidth: 380, lineHeight: 1.7 }}>{error}</p>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+              <button onClick={() => setActiveTab('contact')} style={{ padding: '12px 28px', borderRadius: 100, background: 'linear-gradient(135deg,#ff8ade,#acfff3)', border: 'none', fontFamily: "'Sarabun',sans-serif", fontSize: 15, fontWeight: 700, color: '#1a1a2e', cursor: 'pointer' }}>
+                ✉️ Contact P' Ja-Ae
+              </button>
+              <button onClick={handleSignOut} style={{ padding: '12px 28px', borderRadius: 100, background: 'transparent', border: '1px solid #ddd', fontSize: 15, color: '#888', cursor: 'pointer', fontFamily: "'Sarabun',sans-serif" }}>
+                ← Sign Out
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      // ── Logged in & data loaded ──
+      const purchasedIds = studentData?.courses || [];
+      const unlockedCourseData = COURSE_DATA.filter(c => purchasedIds.includes(c.id));
+      const lockedCourseData = COURSE_DATA.filter(c => !purchasedIds.includes(c.id));
+
+      // Group content by folder (head)
+      const grouped = content.reduce((acc, item) => {
+        const key = `${item.course?.toUpperCase()} — ${item.head}`;
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(item);
+        return acc;
+      }, {});
+
+      return (
+        <div className="fade-up" style={{ maxWidth: 1000, margin: '0 auto', padding: '40px 24px 80px' }}>
+
+          {/* User header bar */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28, padding: '16px 24px', borderRadius: 20, background: 'linear-gradient(135deg,#ff8ade15,#acfff315)', border: '1px solid #ff8ade33', flexWrap: 'wrap', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg,#ff8ade,#acfff3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>😊</div>
+              <div>
+                <div style={{ fontWeight: 700, color: '#1a1a2e' }}>{user.name}</div>
+                <div style={{ fontSize: 13, color: '#888' }}>{user.email}</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              {purchasedIds.map(id => (
+                <span key={id} style={{ padding: '4px 12px', borderRadius: 100, background: 'linear-gradient(135deg,#acfff3,#fbffa4)', fontSize: 12, fontWeight: 700, color: '#1a1a2e' }}>
+                  {id.toUpperCase()} ✓
+                </span>
+              ))}
+              <button onClick={handleSignOut} style={{ padding: '8px 18px', borderRadius: 100, background: 'transparent', border: '1px solid #ddd', fontSize: 13, color: '#888', cursor: 'pointer', fontFamily: "'Sarabun',sans-serif" }}>
+                Sign out
+              </button>
+            </div>
+          </div>
+
+          {/* Expiry warning */}
+          <ExpiryBanner />
+
+          {/* My Content */}
+          <div style={{ marginBottom: 40 }}>
+            <span className="section-pill">My Courses</span>
+            <h1 style={{ fontFamily: "'Playfair Display',serif", fontSize: 'clamp(1.5rem,3vw,2.2rem)', color: '#1a1a2e', marginTop: 8 }}>Your Learning Content</h1>
+            {studentData?.expireDate && (
+              <p style={{ color: '#888', fontSize: 14, marginTop: 6 }}>
+                Access expires: <strong style={{ color: '#c44f9a' }}>{studentData.expireDate}</strong>
+              </p>
+            )}
+          </div>
+
+          {/* Course content folders */}
+          {Object.keys(grouped).length === 0 && purchasedIds.length > 0 ? (
+            <div style={{ textAlign: 'center', padding: 48, color: '#bbb', background: 'white', borderRadius: 20, border: '1px dashed #ddd', marginBottom: 32 }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>📂</div>
+              <p>Content will appear here once uploaded. Check back soon!</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 40 }}>
+              {Object.entries(grouped).map(([folder, items]) => (
+                <div key={folder} style={{ borderRadius: 20, overflow: 'hidden', border: '1px solid rgba(255,138,222,0.2)', background: 'white' }}>
+                  <div onClick={() => setOpenFolder(openFolder === folder ? null : folder)} style={{ padding: '16px 22px', background: 'linear-gradient(135deg,#ff8ade15,#acfff315)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: 700, fontSize: 15, color: '#1a1a2e' }}>📂 {folder}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontSize: 12, color: '#888' }}>{items.length} videos</span>
+                      <span style={{ fontSize: 18, transform: openFolder === folder ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>⌄</span>
+                    </div>
+                  </div>
+                  {openFolder === folder && (
+                    <div style={{ padding: '12px 22px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {items.map((item, i) => (
+                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderRadius: 14, background: '#fafafa', border: '1px solid rgba(0,0,0,0.05)', flexWrap: 'wrap', gap: 8 }}>
+                          <div>
+                            <div style={{ fontSize: 13, color: '#888', marginBottom: 2 }}>{item.subHead} · Tape {item.tapeNo}</div>
+                            <div style={{ fontSize: 15, fontWeight: 600, color: '#1a1a2e' }}>{item.title}</div>
+                          </div>
+                          <a href={item.driveLink} target="_blank" rel="noopener noreferrer" style={{ padding: '8px 20px', borderRadius: 100, background: 'linear-gradient(135deg,#ff8ade,#acfff3)', border: 'none', fontSize: 13, fontWeight: 700, color: '#1a1a2e', cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                            ▶ Watch
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Locked Courses — upsell */}
+          {lockedCourseData.length > 0 && (
+            <>
+              <div style={{ marginBottom: 20 }}>
+                <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: 20, color: '#1a1a2e' }}>🔒 Other Courses</h2>
+                <p style={{ fontSize: 14, color: '#888', marginTop: 4 }}>Unlock more content to accelerate your learning</p>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 16 }}>
+                {lockedCourseData.map(course => (
+                  <div key={course.id} style={{ borderRadius: 20, border: '1px solid rgba(0,0,0,0.08)', background: 'white', overflow: 'hidden', opacity: 0.85 }}>
+                    <div style={{ height: 6, background: course.grad }} />
+                    <div style={{ padding: 24, position: 'relative' }}>
+                      <div style={{ position: 'absolute', top: 16, right: 16, fontSize: 20 }}>🔒</div>
+                      <div style={{ fontSize: 32, marginBottom: 12 }}>{course.badge}</div>
+                      <div style={{ fontWeight: 700, fontSize: 16, color: '#1a1a2e', marginBottom: 6 }}>{course.title}</div>
+                      <p style={{ fontSize: 13, color: '#888', marginBottom: 16, lineHeight: 1.6 }}>{course.desc}</p>
+                      <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 100, background: course.grad, fontSize: 11, fontWeight: 700, color: '#1a1a2e', marginBottom: 16 }}>{course.tapes}</span>
+                      <button onClick={() => setActiveTab('contact')} style={{ width: '100%', padding: '10px', borderRadius: 100, background: 'linear-gradient(135deg,#ff8ade,#acfff3)', border: 'none', fontFamily: "'Sarabun',sans-serif", fontSize: 14, fontWeight: 700, color: '#1a1a2e', cursor: 'pointer' }}>
+                        🛒 Purchase to Unlock
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      );
+    }
+
+    // ─── Contact Page ─────────────────────────────────────────────────────────────
+
+    function ContactPage({ qaItems }) {
+      const qaLoading = qaItems === null;
+      const [openQA, setOpenQA] = React.useState(null);
+
+      return (
+        <div className="fade-up" style={{ maxWidth: 900, margin: '0 auto', padding: '60px 24px' }}>
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
+            <span className="section-pill">Get in Touch</span>
+            <h1 style={{ fontFamily: "'Playfair Display',serif", fontSize: 'clamp(1.8rem,4vw,2.8rem)', color: '#1a1a2e', marginTop: 10 }}>Contact Us</h1>
+            <p style={{ color: '#888', fontSize: 16, marginTop: 8 }}>We're happy to answer any question 🌱</p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 16, marginBottom: 56 }}>
+            {[
+              { icon: '💬', label: 'LINE ID', value: '@hct8934a', color: '#acfff3', href: 'http://lin.ee/gNNwf9P' },
+              { icon: '📸', label: 'Instagram', value: '@geojourney.official / @kaewwalinn.n', color: '#ff8ade', href: 'https://www.instagram.com/geojourney.official?igsh=MWlpbTVoZmJ1Y3NoaQ%3D%3D&utm_source=qr' },
+              { icon: '🎵', label: 'TikTok', value: '@kaewwalinlovesyou', color: '#fbffa4', href: 'https://www.tiktok.com/@kaewwalinlovesyou?_r=1&_t=ZS-96T2zHpfkDi' },
+            ].map((item, i) => (
+              <a key={i} href={item.href} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                <div className="card-hover" style={{ padding: 24, borderRadius: 20, background: 'white', border: `1px solid ${item.color}55`, boxShadow: '0 4px 16px rgba(0,0,0,0.05)', textAlign: 'center', cursor: 'pointer' }}>
+                  <div style={{ width: 52, height: 52, borderRadius: '50%', background: `${item.color}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, margin: '0 auto 12px' }}>{item.icon}</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{item.label}</div>
+                  <div style={{ fontSize: 14, color: '#1a1a2e', fontWeight: 600 }}>{item.value}</div>
+                </div>
+              </a>
+            ))}
+          </div>
+          <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: 22, color: '#1a1a2e', marginBottom: 24 }}>❓ FAQ</h2>
+          {qaLoading ? (
+            <div style={{ textAlign: 'center', color: '#bbb', padding: 32 }}>Loading FAQ…</div>
+          ) : qaItems.length === 0 ? (
+            <div style={{ textAlign: 'center', color: '#bbb', padding: 32 }}>No FAQ items yet.</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {qaItems.map((item, i) => (
+                <div key={i}
+                  onClick={() => setOpenQA(openQA === i ? null : i)}
+                  style={{ padding: 24, borderRadius: 20, background: 'white', border: '1px solid rgba(255,138,222,0.2)', boxShadow: '0 4px 14px rgba(0,0,0,0.05)', cursor: 'pointer', userSelect: 'none' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                    <div style={{ fontWeight: 700, fontSize: 15, color: '#1a1a2e' }}>Q: {item.Content}</div>
+                    <span style={{ fontSize: 18, flexShrink: 0, transform: openQA === i ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', color: '#c44f9a' }}>⌄</span>
+                  </div>
+                  {openQA === i && item.Reply && (
+                    <div style={{ marginTop: 12, fontSize: 14, color: '#666', lineHeight: 1.7, paddingTop: 12, borderTop: '1px solid rgba(255,138,222,0.15)' }}>
+                      A: {item.Reply}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ─── Main App ─────────────────────────────────────────────────────────────────
+
+    const TABS = [
+      { id: 'home', label: '🌍 Home' },
+      { id: 'achievements', label: '🏅 Achievements' },
+      { id: 'courses', label: '📚 Courses' },
+      { id: 'mycourse', label: '🎓 My Course' },
+      { id: 'contact', label: '✉️ Contact' },
+    ];
+
+    function App() {
+      const [activeTab, setActiveTab] = useState('home');
+      const [user, setUser] = useState(null);
+      const [menuOpen, setMenuOpen] = useState(false);
+      const [reviews, setReviews] = useState([]);
+      const [qaItems, setQaItems] = useState(null); // null = loading
+
+      // ── Prefetch all feedback once on app load ──
+      useEffect(() => {
+        fetch(`${APPS_SCRIPT_URL}?action=getFeedback`)
+          .then(r => r.json())
+          .then(d => {
+            if (d.ok && d.items) {
+              setReviews(d.items.filter(i => i.Type === 'review'));
+              setQaItems(d.items.filter(i => i.Type === 'qa'));
+            } else {
+              setQaItems([]);
+            }
+          })
+          .catch(() => setQaItems([]));
+      }, []);
+
+      useEffect(() => {
+        if (!window.netlifyIdentity) return;
+        window.netlifyIdentity.on('init', (u) => {
+          if (u) setUser({ email: u.email, name: u.user_metadata?.full_name || u.email });
+        });
+        window.netlifyIdentity.on('login', (u) => {
+          setUser({ email: u.email, name: u.user_metadata?.full_name || u.email });
+          window.location.href = '/my-course';
+          window.netlifyIdentity.close();
+        });
+        window.netlifyIdentity.on('logout', () => setUser(null));
+        window.netlifyIdentity.init();
+      }, []);
+
+      return (
+        <div style={{ minHeight: '100vh', background: '#fdfcff', fontFamily: "'Sarabun',sans-serif" }}>
+
+          {/* ── Navbar ── */}
+          <nav style={{
+            background: 'rgba(255,255,255,0.88)', backdropFilter: 'blur(16px)',
+            borderBottom: '1px solid rgba(255,138,222,0.2)', position: 'sticky', top: 0, zIndex: 100
+          }}>
+            <div style={{
+              maxWidth: 1100, margin: '0 auto', display: 'flex',
+              alignItems: 'center', justifyContent: 'space-between', padding: '12px 24px'
+            }}>
+
+              {/* Logo */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                <div style={{
+                  width: 38, height: 38, borderRadius: '50%',
+                  background: 'linear-gradient(135deg,#ff8ade,#acfff3)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 18, boxShadow: '0 4px 12px rgba(255,138,222,0.35)'
+                }}>🌍</div>
+                <span style={{ fontFamily: "'Playfair Display',serif", fontWeight: 700, fontSize: 18, color: '#1a1a2e' }}>
+                  Geo<span className="grad-text">Journey</span>
+                </span>
+              </div>
+
+              {/* Desktop tabs */}
+              <div className="desktop-tabs" style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                {TABS.map(tab => (
+                  <button key={tab.id}
+                    className={`nav-tab ${activeTab === tab.id ? 'active' : ''}`}
+                    onClick={() => {
+                      tab.id === 'mycourse'
+                        ? window.location.href = '/my-course'
+                        : setActiveTab(tab.id);
+                    }}>
+                    {tab.label}
+                    {tab.id === 'mycourse' && user && (
+                      <span style={{
+                        marginLeft: 6, width: 8, height: 8, borderRadius: '50%',
+                        background: '#00b4a0', display: 'inline-block', verticalAlign: 'middle'
+                      }} />
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* Hamburger button */}
+              <button className="hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
+                <span style={{ transform: menuOpen ? 'rotate(45deg) translate(5px,5px)' : 'none' }} />
+                <span style={{ opacity: menuOpen ? 0 : 1 }} />
+                <span style={{ transform: menuOpen ? 'rotate(-45deg) translate(5px,-5px)' : 'none' }} />
+              </button>
+            </div>
+
+            {/* Mobile dropdown */}
+            <div className={`mobile-menu ${menuOpen ? 'open' : ''}`}>
+              {TABS.map(tab => (
+                <button key={tab.id}
+                  className={`nav-tab ${activeTab === tab.id ? 'active' : ''}`}
+                  onClick={() => {
+                    setMenuOpen(false);
+                    tab.id === 'mycourse'
+                      ? window.location.href = '/my-course'
+                      : setActiveTab(tab.id);
+                  }}>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </nav>
+
+          {/* ── Content ── */}
+          <main>
+            {activeTab === 'home' && <HomePage setActiveTab={setActiveTab} reviews={reviews} />}
+            {activeTab === 'achievements' && <AchievementsPage />}
+            {activeTab === 'courses' && <CoursesPage setActiveTab={setActiveTab} />}
+            {activeTab === 'mycourse' && <MyCoursePage user={user} setUser={setUser} setActiveTab={setActiveTab} />}
+            {activeTab === 'contact' && <ContactPage qaItems={qaItems} />}
+          </main>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+
+</html>

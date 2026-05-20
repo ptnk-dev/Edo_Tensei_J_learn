@@ -1,0 +1,89 @@
+:root {
+    --pink: #ff8ade;
+    --blue: #acfff3;
+    --yellow: #fbffa4;
+    --white: #ffffff;
+    --dark: #333;
+}
+
+body {
+    font-family: 'Sarabun', sans-serif;
+    margin: 0;
+    background-color: var(--white);
+    color: var(--dark);
+}
+
+nav {
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem 5%;
+    background: var(--blue);
+    /* ใช้สีฟ้าเป็นแถบเมนู [cite: 10] */
+    position: sticky;
+    top: 0;
+}
+
+nav ul {
+    display: flex;
+    list-style: none;
+}
+
+nav ul li a {
+    margin-left: 20px;
+    text-decoration: none;
+    color: var(--dark);
+    font-weight: bold;
+}
+
+.hero {
+    height: 60vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--pink);
+    /* พื้นหลังส่วน Header [cite: 9] */
+    text-align: center;
+}
+
+.btn-primary {
+    background-color: var(--yellow);
+    /* ปุ่มสีเหลือง [cite: 11] */
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+section {
+    padding: 50px 5%;
+}
+
+.module {
+    border: 2px solid var(--blue);
+    padding: 20px;
+    margin: 10px;
+    border-radius: 10px;
+}
+
+/* 1. ทำให้ทั้งแถวสามารถกดคลิกได้ และเด้งขึ้นมาอยู่เลเยอร์บนสุด */
+.tape-row {
+    cursor: pointer;
+    position: relative;
+    z-index: 5;
+    pointer-events: auto !important;
+    /* บังคับให้รับแรงกด */
+}
+
+/* 2. สั่งให้กล่องตัวหนังสือ (ชื่อวิชา, เลขเทป) โปร่งแสงต่อการคลิก เมาส์จะได้ทะลุไปโดนพื้นหลังแถวได้ */
+.tape-info,
+.tape-num,
+.tape-title {
+    pointer-events: none;
+}
+
+/* 3. ยืนยันให้ปุ่ม Watch และปุ่ม Checkbox รับคำสั่งคลิกได้แบบเฉพาะเจาะจง */
+.btn-watch,
+.tape-checkbox {
+    pointer-events: auto;
+}
