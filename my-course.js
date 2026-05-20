@@ -43,6 +43,7 @@ let checkedTapes = {};
 let openHeads = {};
 let openSubheads = {};
 let videoModal = null;
+let latestRequestId = 0; // [FIX] ตัวแปรป้องกัน Data Race
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
@@ -67,7 +68,7 @@ function getDaysUntilExpiry(dateStr) {
 
 function tapeKey(tape) { return `${tape.Course}_tape_${tape.TapeNo}`; }
 
-// [FIX] แยก LocalStorage ของ Progress ตาม Email เพื่อป้องกันข้อมูลข้ามบัญชี
+// [FIX] แยก LocalStorage ของ Progress ตาม Email
 function getStorageKey(email) {
   return `geojourney_progress_${(email || '').toLowerCase().trim()}`;
 }
@@ -118,7 +119,7 @@ function getCached(email) {
 
 function setCache(email, data) {
   if (!data?.found) {
-    clearCache(email); // [FIX] ป้องกันการจำค่า Empty State หากเคย Error
+    clearCache(email); // [FIX] ไม่จำค่า Cache ตอน Error
     return;
   }
   try {
@@ -379,6 +380,47 @@ function loadVideo(tape, iframeWrap, loadingDiv) {
   }
 }
 
+// ─── Modal (legacy) ───────────────────────────────────────────────────────────
+
+function openModal(tape) {
+  videoModal = tape;
+  const ytId = getYouTubeId(tape.DriveLink);
+  const backdrop = el('div', { className: 'modal-backdrop', onClick: (e) => { if (e.target === backdrop) closeModal(); } });
+  const box = el('div', { className: 'modal-box' });
+  const header = el('div', { className: 'modal-header' });
+  const info = el('div', {});
+  info.appendChild(el('div', { className: 'modal-tape-meta' }, `Tape ${tape.TapeNo} · ${tape['Sub-Head']}`));
+  info.appendChild(el('div', { className: 'modal-tape-title' }, tape.Title));
+  header.appendChild(info);
+  header.appendChild(el('button', { className: 'modal-close', onClick: closeModal }, '✕'));
+  box.appendChild(header);
+  const videoArea = el('div', { className: 'modal-video' });
+  if (ytId) {
+    videoArea.appendChild(el('iframe', { src: `https://www.youtube.com/embed/${ytId}?autoplay=1`, allow: 'autoplay; encrypted-media', allowfullscreen: 'true' }));
+  } else if (tape.DriveLink) {
+    const noVid = el('div', { className: 'modal-no-video' });
+    noVid.innerHTML = `<div class="icon">▶</div><p>Opens in a new tab</p><a class="modal-open-link" href="${tape.DriveLink}" target="_blank" rel="noopener noreferrer">Open Video →</a>`;
+    videoArea.appendChild(noVid);
+  } else {
+    const noVid = el('div', { className: 'modal-no-video' });
+    noVid.innerHTML = `<div class="icon">🎬</div><p style="color:#888">Video link not yet added</p>`;
+    videoArea.appendChild(noVid);
+  }
+  box.appendChild(videoArea);
+  backdrop.appendChild(box);
+  document.body.appendChild(backdrop);
+  document.addEventListener('keydown', onEscKey);
+}
+
+function closeModal() {
+  const backdrop = document.querySelector('.modal-backdrop');
+  if (backdrop) backdrop.remove();
+  document.removeEventListener('keydown', onEscKey);
+  videoModal = null;
+}
+
+function onEscKey(e) { if (e.key === 'Escape') closeModal(); }
+
 // ─── Progress bar ─────────────────────────────────────────────────────────────
 
 function buildProgressBar(done, total) {
@@ -466,7 +508,6 @@ function showSuggestions(q, allTapes) {
 
   const exactCourse = courses.find(c => c === terms[0]);
 
-  // ไกด์เมื่อพิมพ์ชื่อคอร์สตรงๆ
   if (exactCourse) {
      const lastTerm = terms.length > 1 ? terms[terms.length - 1] : '';
      if (/\d/.test(lastTerm)) {
@@ -478,14 +519,12 @@ function showSuggestions(q, allTapes) {
      }
   }
 
-  // ค้นหา Course
   courses.forEach(c => {
     if (c.includes(query) && c !== query && !courseSugs.find(s => s.text === c)) {
       courseSugs.push({ text: c, type: 'Course' });
     }
   });
 
-  // ค้นหา Subhead
   subheads.forEach(sh => {
     if (sh.toLowerCase().includes(query) && !topicSugs.find(s => s.text === sh)) {
       topicSugs.push({ text: sh, type: 'Topic' });
@@ -514,7 +553,7 @@ function showSuggestions(q, allTapes) {
     `;
     
     item.addEventListener('mousedown', (e) => {
-      e.preventDefault(); // ป้องกันช่องค้นหาเสีย focus ก่อนคลิก
+      e.preventDefault();
       const input = document.getElementById('tape-search');
       input.value = s.text;
       box.style.display = 'none';
@@ -828,6 +867,18 @@ function handleSignOut() {
   renderLoginScreen();
 }
 
+function renderAuthLoadingScreen() {
+  const wrap = el('div', { className: 'loader-wrap fade-up' });
+  wrap.innerHTML = `
+    <div class="loader"></div>
+    <div style="text-align:center; margin-top:20px;">
+      <h3 style="color:#1a1a2e; margin-bottom:8px; font-family:'Playfair Display', serif;">Verifying Identity</h3>
+      <p style="color:#888; font-size:14px;">กำลังตรวจสอบสิทธิ์เข้าใช้งานบทเรียนของคุณ...</p>
+    </div>
+  `;
+  showScreen(wrap);
+}
+
 function renderLoginScreen() {
   const wrap = el('div', { className: 'login-screen' });
   const box = el('div', { className: 'login-box fade-up' });
@@ -842,7 +893,7 @@ function renderLoginScreen() {
 
 function renderLoadingScreen() {
   const wrap = el('div', { className: 'loader-wrap' });
-  wrap.innerHTML = `<div class="loader"></div><p style="color:#888;font-size:15px">Loading your courses...</p>`;
+  wrap.innerHTML = `<div class="loader"></div><p style="color:#888;font-size:15px; margin-top:15px;">Loading your courses...</p>`;
   showScreen(wrap);
 }
 
@@ -874,13 +925,11 @@ function applyData(email, data) {
   contentRows = (data.content || []).sort((a, b) => Number(a.TapeNo) - Number(b.TapeNo));
   courseInfoData = data.courseInfo || [];
   
-  loadProgress(email); // [FIX] ส่ง email เข้าไปผูกเป็น Key ของแต่ละบัญชี
+  loadProgress(email);
   
   if (contentRows.length > 0) openHeads[`head_${contentRows[0].Head || 'General'}`] = true;
   renderDashboard();
 }
-
-let latestRequestId = 0; // [FIX] ตัวแปรป้องกัน Data Race โหลดทับซ้อน
 
 async function loadUserData(email, retry = 0) {
   const currentRequestId = ++latestRequestId;
@@ -902,7 +951,7 @@ async function loadUserData(email, retry = 0) {
   try {
     const data = await fetchAll(email);
     
-    // [FIX] เช็คว่ามีคนกดรีเฟรชหรือสลับบัญชีระหว่างที่รอดึงข้อมูลหรือไม่ ถ้าใช่ให้ทิ้งชุดนี้ไปเลย
+    // ป้องกันคนกดรีเฟรชหรือสลับบัญชีระหว่างรอดึงข้อมูล
     if (currentRequestId !== latestRequestId) return;
 
     if (!data.found) {
@@ -928,7 +977,7 @@ async function loadUserData(email, retry = 0) {
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
-document.addEventListener('DOMContentLoaded', () => {
+function initApp() {
   if (DEV_MODE) {
     currentUser = { email: DEV_EMAIL, name: DEV_NAME };
     const devBanner = document.createElement('div');
@@ -943,6 +992,8 @@ document.addEventListener('DOMContentLoaded', () => {
     renderErrorScreen('Authentication service not available. Please refresh the page.');
     return;
   }
+
+  renderAuthLoadingScreen();
 
   window.netlifyIdentity.on('init', (user) => {
     if (user) {
@@ -966,4 +1017,10 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   window.netlifyIdentity.init();
+}
+
+window.addEventListener('load', () => {
+  if (window.location.pathname.includes('my-course')) {
+    initApp();
+  }
 });
