@@ -3,7 +3,7 @@
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzeEfsqfJ3-yPfw5g2JOiL1JxpM8_WMfGGBB2r8W6tI0hVFg1qKh4tuSPtYohoZB2J1/exec';
 
 // ── DEV MODE ─────────────────────────────────────────────────
-const DEV_MODE = true;
+const DEV_MODE = false;
 
 let searchQuery = '';
 const DEV_EMAIL = 'amz.paopao@gmail.com';
