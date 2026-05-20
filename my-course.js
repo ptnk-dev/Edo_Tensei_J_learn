@@ -973,29 +973,24 @@ async function loadUserData(email, retry = 0) {
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
+// 1. ฟังก์ชันพิเศษสำหรับดึงอีเมลตรงจาก Local Storage แบบเสถียร 100% ไม่สนบั๊กคลาวด์
+function getSafeEmail() {
+  try {
+    const raw = localStorage.getItem('gotrue.user');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return parsed?.email || null;
+    }
+  } catch (e) {
+    console.error("❌ [GeoJourney] อ่าน LocalStorage พัง:", e);
+  }
+  return null;
+}
+
 function initApp() {
   if (DEV_MODE) {
-    // 1. จำลองข้อมูล User
     currentUser = { email: 'amz.paopao@gmail.com', name: 'Pao Pao' };
-
-    // 2. จำลองข้อมูลวิชาที่ลงทะเบียนเรียน และข้อมูลเทปวิดีโอ
-    studentData = {
-      email: currentUser.email,
-      courses: ['tgeo', 'tgeomock2026'],
-      expireDate: '2026-12-31',
-    };
-
-    contentRows = [
-      { Course: 'tgeo', TapeNo: 1, Head: 'Physical Geography', 'Sub-Head': 'INTRO for TGeo Crash Course', Title: 'แนะนำภาพรวมบทเรียนภูมิศาสตร์กายภาพ', DriveLink: 'https://youtu.be/dQw4w9WgXcQ' },
-      { Course: 'tgeo', TapeNo: 2, Head: 'Physical Geography', 'Sub-Head': 'Landform, Landscapes & Land Use', Title: 'โครงสร้างทางธรณีและสัณฐานวิทยา', DriveLink: '' },
-      { Course: 'tgeomock2026', TapeNo: 1, Head: 'INTRO', 'Sub-Head': 'INTRO for TGeo Mock Exam', Title: 'เจาะลึกเทคนิคการทำข้อสอบเก่า WRT', DriveLink: 'https://youtu.be/dQw4w9WgXcQ' },
-    ];
-
-    courseInfoData = [];
-
-    loadProgress(currentUser.email);
-    if (contentRows.length > 0) openHeads[`head_${contentRows[0].Head || 'General'}`] = true;
-    renderDashboard();
+    loadUserData(currentUser.email);
     return;
   }
 
@@ -1003,17 +998,32 @@ function initApp() {
 
   renderAuthLoadingScreen();
 
+  // ดักจับโหลดหน้าแรก
   window.netlifyIdentity.on('init', (user) => {
-    if (user) {
-      currentUser = { email: user.email, name: user.user_metadata?.full_name || user.email };
-      loadUserData(currentUser.email);
-    } else renderLoginScreen();
+    // แผนสำรองสามประสาน: เช็คจากพารามิเตอร์ -> เช็คอินสแตนซ์สด -> เจาะทะลุ Local Storage
+    const email = user?.email || window.netlifyIdentity.currentUser()?.email || getSafeEmail();
+    
+    if (email) {
+      const name = user?.user_metadata?.full_name || window.netlifyIdentity.currentUser()?.user_metadata?.full_name || email;
+      currentUser = { email, name };
+      loadUserData(email);
+    } else {
+      renderLoginScreen();
+    }
   });
 
+  // ดักจับตอนกดปุ่มล็อกอิน
   window.netlifyIdentity.on('login', (user) => {
-    currentUser = { email: user.email, name: user.user_metadata?.full_name || user.email };
-    window.netlifyIdentity.close();
-    loadUserData(currentUser.email);
+    const email = user?.email || window.netlifyIdentity.currentUser()?.email || getSafeEmail();
+    
+    if (email) {
+      const name = user?.user_metadata?.full_name || window.netlifyIdentity.currentUser()?.user_metadata?.full_name || email;
+      currentUser = { email, name };
+      window.netlifyIdentity.close();
+      loadUserData(email);
+    } else {
+      renderLoginScreen();
+    }
   });
 
   window.netlifyIdentity.on('logout', () => {
@@ -1029,18 +1039,18 @@ window.addEventListener('load', () => {
     initApp();
   }
 });
-// ดักจับเวลาผู้ใช้สลับแท็บกลับมาหน้าเว็บเรา
+
+// 3. ปรับปรุงตัวสลับแท็บด้านล่างสุดให้ปลอดภัยขั้นสุด
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && !studentData) {
-    // ถ้าผู้ใช้กลับมาที่แท็บ และยังไม่มีข้อมูลนักเรียน ให้ลองดึงข้อมูลใหม่
-    if (window.netlifyIdentity && window.netlifyIdentity.currentUser()) {
-      const u = window.netlifyIdentity.currentUser();
-      currentUser = { email: u.email, name: u.user_metadata?.full_name || u.email };
+    const email = window.netlifyIdentity?.currentUser()?.email || getSafeEmail();
+    if (email) {
+      const name = window.netlifyIdentity?.currentUser()?.user_metadata?.full_name || email;
+      currentUser = { email, name };
       
-      // ล้าง Error เก่า (ถ้ามี) แล้วสั่งโหลดใหม่
       const appWrap = document.getElementById('app');
-      if (appWrap && appWrap.innerHTML.includes('No Courses Found')) {
-        loadUserData(currentUser.email, 0);
+      if (appWrap && (appWrap.innerHTML.includes('No Courses Found') || appWrap.innerHTML.includes('ระบบตรวจสอบบัญชี'))) {
+        loadUserData(email, 0);
       }
     }
   }
