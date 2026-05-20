@@ -6,8 +6,6 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzeEfsqfJ3-yPfw
 const DEV_MODE = false;
 
 let searchQuery = '';
-const DEV_EMAIL = 'amz.paopao@gmail.com';
-const DEV_NAME = 'Pao Pao';
 const ALL_COURSES = [
   { id: 'tgeo', badge: '🌍', title: 'TGeo Crash Course', desc: 'สรุปเนื้อหาครบ + ตะลุยโจทย์เข้มข้น เพื่อสอบ TGeo และคว้าเหรียญรางวัล', tapes: '51 Tapes', grad: 'linear-gradient(135deg,#ff8ade,#acfff3)', formLink: '#' },
   { id: 'geocamp1', badge: '🏕️', title: 'Geo Camp 1 Essentials', desc: 'เรียนภูมิศาสตร์ตั้งแต่ 0 ครอบคลุมทุก Head เหมาะสำหรับ Geo Camp 1', tapes: '56 Tapes', grad: 'linear-gradient(135deg,#acfff3,#ff8ade)', formLink: '#' },
@@ -936,42 +934,21 @@ async function loadUserData(email, retry = 0) {
   const MAX_RETRY = 4;
   const RETRY_DELAY = 2000;
 
-  const cached = getCached(email);
-  if (cached) {
-    applyData(email, cached);
-    fetchAll(email).then(fresh => {
-      if (!fresh?.found || currentRequestId !== latestRequestId) return;
-      setCache(email, fresh);
-    }).catch(() => {});
-    return;
-  }
-
   if (retry === 0) renderLoadingScreen();
 
   try {
     const data = await fetchAll(email);
-    
-    // ป้องกันคนกดรีเฟรชหรือสลับบัญชีระหว่างรอดึงข้อมูล
     if (currentRequestId !== latestRequestId) return;
+    if (!data?.found) throw new Error('No Data');
 
-    if (!data.found) {
-      if (retry < MAX_RETRY) {
-        setTimeout(() => loadUserData(email, retry + 1), RETRY_DELAY);
-        return;
-      }
-      renderErrorScreen("No course found for this account. Please contact P' J'Ae to enroll.", email);
-      return;
-    }
-    setCache(email, data);
     applyData(email, data);
   } catch (err) {
-    console.error(err);
     if (currentRequestId !== latestRequestId) return;
     if (retry < MAX_RETRY) {
       setTimeout(() => loadUserData(email, retry + 1), RETRY_DELAY);
       return;
     }
-    renderErrorScreen('Failed to load course data. Please try again.', email);
+    renderErrorScreen('ไม่พบคอร์สในบัญชีนี้ กรุณาติดต่อพี่เจ้', email);
   }
 }
 
@@ -979,19 +956,31 @@ async function loadUserData(email, retry = 0) {
 
 function initApp() {
   if (DEV_MODE) {
-    currentUser = { email: DEV_EMAIL, name: DEV_NAME };
-    const devBanner = document.createElement('div');
-    devBanner.style.cssText = 'position:fixed;bottom:16px;right:16px;background:#1a1a2e;color:#fbffa4;padding:8px 16px;border-radius:100px;font-size:12px;font-weight:700;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.3)';
-    devBanner.textContent = '🛠 DEV MODE';
-    document.body.appendChild(devBanner);
-    loadUserData(DEV_EMAIL);
+    // 1. จำลองข้อมูล User
+    currentUser = { email: 'amz.paopao@gmail.com', name: 'Pao Pao' };
+
+    // 2. จำลองข้อมูลวิชาที่ลงทะเบียนเรียน และข้อมูลเทปวิดีโอ
+    studentData = {
+      email: currentUser.email,
+      courses: ['tgeo', 'tgeomock2026'],
+      expireDate: '2026-12-31',
+    };
+
+    contentRows = [
+      { Course: 'tgeo', TapeNo: 1, Head: 'Physical Geography', 'Sub-Head': 'INTRO for TGeo Crash Course', Title: 'แนะนำภาพรวมบทเรียนภูมิศาสตร์กายภาพ', DriveLink: 'https://youtu.be/dQw4w9WgXcQ' },
+      { Course: 'tgeo', TapeNo: 2, Head: 'Physical Geography', 'Sub-Head': 'Landform, Landscapes & Land Use', Title: 'โครงสร้างทางธรณีและสัณฐานวิทยา', DriveLink: '' },
+      { Course: 'tgeomock2026', TapeNo: 1, Head: 'INTRO', 'Sub-Head': 'INTRO for TGeo Mock Exam', Title: 'เจาะลึกเทคนิคการทำข้อสอบเก่า WRT', DriveLink: 'https://youtu.be/dQw4w9WgXcQ' },
+    ];
+
+    courseInfoData = [];
+
+    loadProgress(currentUser.email);
+    if (contentRows.length > 0) openHeads[`head_${contentRows[0].Head || 'General'}`] = true;
+    renderDashboard();
     return;
   }
 
-  if (!window.netlifyIdentity) {
-    renderErrorScreen('Authentication service not available. Please refresh the page.');
-    return;
-  }
+  if (!window.netlifyIdentity) return;
 
   renderAuthLoadingScreen();
 
@@ -999,15 +988,12 @@ function initApp() {
     if (user) {
       currentUser = { email: user.email, name: user.user_metadata?.full_name || user.email };
       loadUserData(currentUser.email);
-    } else {
-      renderLoginScreen();
-    }
+    } else renderLoginScreen();
   });
 
   window.netlifyIdentity.on('login', (user) => {
     currentUser = { email: user.email, name: user.user_metadata?.full_name || user.email };
     window.netlifyIdentity.close();
-    clearCache(user.email);
     loadUserData(currentUser.email);
   });
 
@@ -1022,5 +1008,21 @@ function initApp() {
 window.addEventListener('load', () => {
   if (window.location.pathname.includes('my-course')) {
     initApp();
+  }
+});
+// ดักจับเวลาผู้ใช้สลับแท็บกลับมาหน้าเว็บเรา
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && !studentData) {
+    // ถ้าผู้ใช้กลับมาที่แท็บ และยังไม่มีข้อมูลนักเรียน ให้ลองดึงข้อมูลใหม่
+    if (window.netlifyIdentity && window.netlifyIdentity.currentUser()) {
+      const u = window.netlifyIdentity.currentUser();
+      currentUser = { email: u.email, name: u.user_metadata?.full_name || u.email };
+      
+      // ล้าง Error เก่า (ถ้ามี) แล้วสั่งโหลดใหม่
+      const appWrap = document.getElementById('app');
+      if (appWrap && appWrap.innerHTML.includes('No Courses Found')) {
+        loadUserData(currentUser.email, 0);
+      }
+    }
   }
 });

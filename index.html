@@ -928,6 +928,20 @@
       const [reviews, setReviews] = useState([]);
       const [qaItems, setQaItems] = useState(null); // null = loading
 
+      // ── Hash routing support for direct links like #courses, #contact ──
+      useEffect(() => {
+        const handleHash = () => {
+          const hash = window.location.hash.replace('#', '');
+          if (['home', 'achievements', 'courses', 'contact'].includes(hash)) {
+            setActiveTab(hash);
+          }
+        };
+
+        handleHash();
+        window.addEventListener('hashchange', handleHash);
+        return () => window.removeEventListener('hashchange', handleHash);
+      }, []);
+
       // ── Prefetch all feedback once on app load ──
       useEffect(() => {
         fetch(`${APPS_SCRIPT_URL}?action=getFeedback`)
