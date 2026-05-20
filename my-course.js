@@ -931,8 +931,18 @@ function applyData(email, data) {
 
 async function loadUserData(email, retry = 0) {
   const currentRequestId = ++latestRequestId;
-  const MAX_RETRY = 5; // เพิ่มจำนวนรอบการลองใหม่เป็น 5 รอบ
-  const RETRY_DELAY = 3000; // เพิ่มระยะเวลารอเป็น 3 วินาที (ให้ Apps Script มีเวลาหายใจ)
+  const MAX_RETRY = 5;
+  const RETRY_DELAY = 3000;
+
+  // 1. เพิ่ม Log ตรงนี้เพื่อดูเลยว่าระบบอ่านค่าอีเมลอะไรได้
+  console.log('🔍 [GeoJourney Debug] กำลังดึงข้อมูลคอร์สของอีเมล:', email);
+
+  // ป้องกันกรณีอีเมลหลุดเป็นค่าว่าง หรือ undefined จะได้ไม่วิ่งไปกวน Google Sheet
+  if (!email || email === 'undefined') {
+    console.error('❌ [GeoJourney Debug] ตรวจพบอีเมลเป็นค่าว่างหรือรูปแบบไม่ถูกต้อง');
+    renderErrorScreen('ระบบตรวจสอบบัญชีผู้ใช้ขัดข้อง (Email Invalid) กรุณาลอง Sign Out แล้วเข้าสู่ระบบใหม่อีกครั้ง', null);
+    return;
+  }
 
   if (retry === 0) renderLoadingScreen();
 
@@ -940,26 +950,24 @@ async function loadUserData(email, retry = 0) {
     const data = await fetchAll(email);
     if (currentRequestId !== latestRequestId) return;
 
-    // ถ้ายิงเซิร์ฟเวอร์ติด แต่ Google Sheet บอกว่าไม่เจออีเมลนี้จริงๆ (ไม่มีคอร์สจริงๆ)
     if (data && data.found === false) {
+      // พ่น Log ยืนยันว่า Google Apps Script หาอีเมลนี้ไม่เจอจริงๆ
+      console.warn(`⚠️ [GeoJourney API] ไม่พบอีเมล ${email} ในฐานข้อมูล Students บน Google Sheet`);
       renderErrorScreen('ไม่พบคอร์สในบัญชีนี้ กรุณาติดต่อพี่เจ้ เพื่อตรวจสอบสิทธิ์การเข้าเรียน', email);
       return;
     }
 
-    // ถ้าเจอข้อมูลวิชาปกติ ให้เปิดหน้าแดชบอร์ดเลย
     applyData(email, data);
   } catch (err) {
     if (currentRequestId !== latestRequestId) return;
 
-    // ถ้าเกิดจากเน็ตเวิร์กหน่วง หรือ Apps Script กำลังตื่น (Cold Start) ให้บวกสเต็ปพยายามโหลดใหม่
     if (retry < MAX_RETRY) {
-      console.log(`[GeoJourney API] อดทนรอจังหวะ Apps Script หน่วง... กำลังลองใหม่รอบที่ ${retry + 1}`);
+      console.log(`⏳ [GeoJourney API] Apps Script หน่วง... กำลังลองใหม่รอบที่ ${retry + 1}`);
       setTimeout(() => loadUserData(email, retry + 1), RETRY_DELAY);
       return;
     }
 
-    // กรณีที่ระบบมันล่มจริงๆ หรือขาดการติดต่อยาวนานเกิน 15 วินาที ค่อยพ่นหน้า Error
-    renderErrorScreen('ระบบเชื่อมต่อฐานข้อมูลคอร์สเรียนขัดข้องชั่วคราว กรุณากดปุ่ม "🔄 Try Again" หรือสลับหน้าเพื่อโหลดใหม่อีกครั้ง', email);
+    renderErrorScreen('ระบบเชื่อมต่อฐานข้อมูลขัดข้องชั่วคราว กรุณากดปุ่ม "🔄 Try Again" หรือสลับหน้าเพื่อโหลดใหม่อีกครั้ง', email);
   }
 }
 
