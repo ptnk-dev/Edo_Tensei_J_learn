@@ -1012,18 +1012,14 @@ function initApp() {
     }
   });
 
-  // ดักจับตอนกดปุ่มล็อกอิน
+  // บล็อกล็อกอินเวอร์ชันแก้ปัญหาหน้าจอค้าง
   window.netlifyIdentity.on('login', (user) => {
-    const email = user?.email || window.netlifyIdentity.currentUser()?.email || getSafeEmail();
+    window.netlifyIdentity.close();
     
-    if (email) {
-      const name = user?.user_metadata?.full_name || window.netlifyIdentity.currentUser()?.user_metadata?.full_name || email;
-      currentUser = { email, name };
-      window.netlifyIdentity.close();
-      loadUserData(email);
-    } else {
-      renderLoginScreen();
-    }
+    // เว้นจังหวะให้คลาวด์ฝังเซสชันลง Local Storage แป๊บนึง (300ms) แล้วสั่งรีเฟรชหน้าจอออโต้ทันที
+    setTimeout(() => {
+      window.location.reload();
+    }, 300);
   });
 
   window.netlifyIdentity.on('logout', () => {
