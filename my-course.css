@@ -1657,3 +1657,92 @@ body {
   background: #ddd;
   border-radius: 10px;
 }
+/* ══════════════════════════════════════════════════════════════
+   TABLET-ONLY PATCH — ไม่แตะ phone (≤640px) ที่แก้ไปแล้ว
+   วิธีใช้: copy ต่อท้าย my-course.css บรรทัดสุดท้าย
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── 1. Viewer: tablet portrait (641–900px) ───────────────────
+        stack เป็น column เหมือน phone แต่ใช้ aspect-ratio
+        เพื่อให้ video โชว์เต็มความกว้างและไม่หายบนแนวตั้ง    */
+@media (min-width: 641px) and (max-width: 900px) {
+  .viewer-body {
+    flex-direction: column !important;
+    height: auto !important;
+  }
+
+  .video-side {
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 16 / 9;
+    min-height: 260px;
+  }
+
+  .vl-playlist {
+    width: 100% !important;
+    height: 220px;
+    max-height: 220px;
+    border-left: none !important;
+    border-top: 1px solid #f0f0f0;
+    overflow-y: auto;
+  }
+
+  .viewer-page-wrap {
+    padding: 20px 16px 60px;
+  }
+
+  .viewer-footer {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .btn-done-vl {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+}
+
+/* ── 2. Viewer: tablet landscape (901–1200px) ─────────────────
+        side-by-side คงเดิม แต่ใช้ aspect-ratio แทน 440px fix */
+@media (min-width: 901px) and (max-width: 1200px) {
+  .viewer-body {
+    height: auto;
+    min-height: 360px;
+  }
+
+  .video-side {
+    aspect-ratio: 16 / 9;
+    height: auto;
+  }
+}
+
+/* ── 3. Locked card tapes badge: แก้โดนตัดขอบ ────────────────
+        ใช้กับทุก breakpoint เพราะเป็น bug ของ element เอง    */
+.locked-tapes-badge {
+  display: inline-block;
+  max-width: calc(100% - 32px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+/* ── 4. Locked grid: 1 col บน tablet portrait แคบ ────────────*/
+@media (min-width: 641px) and (max-width: 820px) {
+  .locked-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .locked-card-body {
+    padding: 16px 18px;
+  }
+}
+
+/* ── 5. Page padding บน tablet ───────────────────────────────*/
+@media (min-width: 641px) and (max-width: 900px) {
+  .page {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
