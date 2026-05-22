@@ -248,6 +248,12 @@ function renderViewer(tape, allTapes) {
     const iframeWrap = el('div', { className: 'vl-iframe-wrap' });
     iframeWrap.style.cssText = 'display:none;position:absolute;inset:0;width:100%;height:100%;';
     videoSide.appendChild(iframeWrap);
+
+    // ── Fullscreen button ──
+    const fsBtn = el('button', { className: 'vl-fullscreen-btn', title: 'เต็มหน้าจอ', onClick: () => { const c = document.querySelector('.video-side'); if (!c) return; (c.requestFullscreen || c.webkitRequestFullscreen || c.mozRequestFullScreen || c.msRequestFullscreen)?.call(c); } });
+    fsBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>`;
+    videoSide.appendChild(fsBtn);
+
     card.appendChild(videoSide);
 
     const sidebar = el('div', { className: 'vl-playlist' });
@@ -812,7 +818,7 @@ function renderDashboard() {
       hRow.appendChild(el('div', { style: { width: '44px', height: '44px', borderRadius: '14px', flexShrink: '0', background: courseInfo?.grad || 'linear-gradient(135deg,#ff8ade,#acfff3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', boxShadow: '0 4px 12px rgba(255,138,222,0.25)' } }, courseInfo?.badge || '📚'));
       const infoCol = el('div', { style: { flex: '1', minWidth: '0' } });
       infoCol.appendChild(el('div', { style: { fontSize: '17px', fontWeight: '700', fontFamily: "'Playfair Display',serif", color: '#1a1a2e' } }, courseInfo?.title || courseId.toUpperCase()));
-      infoCol.appendChild(el('div', { id: `csub-${courseId}`, style: { fontSize: '12px', color: '#aaa', marginTop: '2px' } }, `${doneCount} / ${courseTapes.length} tapes completed`));
+      infoCol.appendChild(el('div', { id: `csub-${courseId}`, style: { fontSize: '12px', color: '#aaa', marginTop: '2px', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' } }, `${doneCount} / ${courseTapes.length} tapes completed`));
       hRow.appendChild(infoCol);
       hRow.appendChild(el('div', { id: `cpct-${courseId}`, style: { padding: '5px 14px', borderRadius: '100px', flexShrink: '0', background: pct === 100 ? 'linear-gradient(135deg,#acfff3,#00b4a0)' : 'linear-gradient(135deg,#ff8ade22,#acfff322)', border: pct === 100 ? 'none' : '1px solid #ff8ade33', fontSize: '12px', fontWeight: '700', color: pct === 100 ? '#1a1a2e' : '#c44f9a' } }, pct === 100 ? '✓ Complete' : `${pct}%`));
 
